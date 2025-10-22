@@ -3,6 +3,7 @@ import {createContext, useContext, useState, useRef, useEffect} from "react";
 const MusicContext = createContext();
 
 export const MusicProvider = ({children}) => {
+
     const musicAPI = [
         {
             songName: "Be Ki Begam",
@@ -53,26 +54,23 @@ export const MusicProvider = ({children}) => {
             songAvatar: "/Assets/Images/Novan.jpg",
         },
     ];
-    const [currentTime, setCurrentTime] = useState("00:00");
-    const [totalTime, setTotalTime] = useState("00:00");
-    const [progress, setProgress] = useState(0);
+
+
     const [musicIndex, setMusicIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
-    // const [audio, setAudio] = useState(60);
+    const [progress, setProgress] = useState(0);
+    const [currentTime, setCurrentTime] = useState("00:00");
+    const [totalTime, setTotalTime] = useState("00:00");
     const RefAudio = useRef(null);
 
     const musicDetail = musicAPI[musicIndex];
-    useEffect(() => {
-        if (isPlaying && RefAudio.current) {
-            RefAudio.current.load();
-            RefAudio.current.play();
-        }
-    }, [musicIndex]);
 
-// pause and play
+    //*************** pause or play ********************
+
     const togglePlay = () => {
         const audio = RefAudio.current;
         if (!audio) return;
+
         if (audio.paused) {
             audio.play();
             setIsPlaying(true);
@@ -82,17 +80,16 @@ export const MusicProvider = ({children}) => {
         }
     };
 
-
+//***************Next Music*************
     const handleNextMusic = () => {
         setMusicIndex((prev) => (prev >= musicAPI.length - 1 ? 0 : prev + 1));
     };
 
+    //************ prev Music **************
     const handlePrevMusic = () => {
         setMusicIndex((prev) => (prev <= 0 ? musicAPI.length - 1 : prev - 1));
     };
 
-
-    // auto Next Music
     const handleEnded = () => {
         handleNextMusic();
         setTimeout(() => {
@@ -103,7 +100,7 @@ export const MusicProvider = ({children}) => {
         }, 200);
     };
 
-
+    // *********  Skip forward or backward in a song********
     const handleSeek = (e) => {
         const value = e.target.value;
         if (RefAudio.current) {
@@ -113,29 +110,42 @@ export const MusicProvider = ({children}) => {
         setProgress(value);
     };
 
-
+    // ************** Update play music ****************
     useEffect(() => {
         const audio = RefAudio.current;
         if (!audio) return;
 
-        const update = () => {
-            setProgress((audio.currentTime / audio.duration) * 100 || 0);
-            setCurrentTime(formatTime(audio.currentTime));
-            setTotalTime(formatTime(audio.duration));
+        const updateTime = () => {
+            const current = audio.currentTime || 0;
+            const duration = audio.duration || 0;
+
+            setProgress((current / duration) * 100 || 0);
+            setCurrentTime(formatTime(current));
+            setTotalTime(formatTime(duration));
         };
 
-        audio.addEventListener("timeupdate", update);
-        return () => audio.removeEventListener("timeupdate", update);
+        audio.addEventListener("timeupdate", updateTime);
+        return () => audio.removeEventListener("timeupdate", updateTime);
     }, []);
 
+    // ********** Auto Next Music **********
+    useEffect(() => {
+        if (isPlaying && RefAudio.current) {
+            RefAudio.current.load();
+            RefAudio.current.play();
+        }
+    }, [musicIndex]);
+
+    // ********** Time **********
     const formatTime = (time) => {
         if (isNaN(time)) return "00:00";
-        const minutes = Math.floor(time / 60);
-        const seconds = Math.floor(time % 60);
-        return `${minutes.toString().padStart(2, "0")}:${seconds
+        const min = Math.floor(time / 60);
+        const sec = Math.floor(time % 60);
+        return `${min.toString().padStart(2, "0")}:${sec
             .toString()
             .padStart(2, "0")}`;
     };
+
     return (
         <MusicContext.Provider
             value={{
@@ -158,5 +168,6 @@ export const MusicProvider = ({children}) => {
         </MusicContext.Provider>
     );
 };
+
 
 export const useMusic = () => useContext(MusicContext);
