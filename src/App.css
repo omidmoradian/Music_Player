@@ -13,7 +13,7 @@ body {
     box-sizing: border-box;
 }
 
-.container {
+.wrapper {
     min-height: 100vh;
     min-width: 100vw;
     display: flex;
@@ -23,7 +23,7 @@ body {
     font-family: 'Poppins';
 }
 
-.backgroundVideo {
+.bgClip {
     position: absolute;
     right: 0;
     top: 0;
@@ -34,7 +34,7 @@ body {
     filter: saturate(2.5);
 }
 
-.blackScreen {
+.overlay {
     width: 100vw;
     height: 100vh;
     position: absolute;
@@ -42,7 +42,7 @@ body {
     background-color: rgba(17, 17, 17, 0.2);
 }
 
-.music-Container {
+.playerBox {
     width: 350px;
     padding: 35px 40px;
     display: flex;
@@ -58,29 +58,27 @@ body {
     font-weight: 600;
 }
 
-
-.haederName {
+.titleTxt {
     margin: 0 auto;
     font-size: 1.5rem;
     text-align: center;
 }
 
-.artistName {
+.artistTxt {
     color: var(--mainDimColor);
     margin: 4px 0;
     font-size: 1.2rem;
     font-weight: 400;
 }
 
-
-.visualizerWrapper {
+.visualBox {
     position: relative;
     display: inline-block;
     width: 170px;
     height: 170px;
 }
 
-.visualizerAvatar {
+.albumCover {
     width: 90%;
     height: 90%;
     top: 30px;
@@ -93,7 +91,7 @@ body {
 }
 
 /* حلقه بیرونی */
-.visualizerRing {
+.ringAnim {
     position: absolute;
     top: 24px;
     left: 1px;
@@ -114,7 +112,7 @@ body {
 }
 
 /* موج دوم بیرونی */
-.visualizerWave {
+.waveAnim {
     position: absolute;
     top: 11px;
     left: -13px;
@@ -127,16 +125,16 @@ body {
 }
 
 /* متوقف شدن انیمیشن‌ها در حالت pause */
-.visualizerWrapper.paused .visualizerRing,
-.visualizerWrapper.paused .visualizerWave,
-.visualizerWrapper.paused .visualizerAvatar {
+.visualBox.off .ringAnim,
+.visualBox.off .waveAnim,
+.visualBox.off .albumCover {
     animation-play-state: paused !important;
     filter: brightness(0.5) blur(1px);
     transform: scale(0.98);
 }
 
 /* حالت play */
-.visualizerWrapper.playing .visualizerAvatar {
+.visualBox.on .albumCover {
     animation: pulseAvatar 2s ease-in-out infinite;
     filter: brightness(1);
 }
@@ -181,18 +179,15 @@ body {
     }
 }
 
-.TimerDiv {
+.timeInfo {
     display: flex;
     justify-content: space-between;
     width: 100%;
     font-weight: 600;
 }
 
-.controls {
+.controlPanel {
     cursor: pointer;
     font-size: 50px;
     color: var(--mainColor);
 }
-
-
-

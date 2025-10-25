@@ -1,85 +1,80 @@
 import React from "react";
-import "./App.css";
 import Box from "@mui/material/Box";
 import Slider from "@mui/material/Slider";
 import SkipPreviousOutlinedIcon from "@mui/icons-material/SkipPreviousOutlined";
 import PlayCircleIcon from "@mui/icons-material/PlayCircle";
 import PauseCircleIcon from "@mui/icons-material/PauseCircle";
 import SkipNextOutlinedIcon from "@mui/icons-material/SkipNextOutlined";
-import {useMusic} from "./components/MusicContext.jsx";
+import {useAudioKit} from "./components/MusicContext";
+import "./App.css";
 
 const App = () => {
     const {
-        progress,
-        handleSeek,
-        musicDetail,
-        RefAudio,
-        isPlaying,
-        handleNextMusic,
-        handlePrevMusic,
-        togglePlay,
-        handleEnded,
-        currentTime,
-        totalTime,
-    } = useMusic();
+        barProgress,
+        onSeekChange,
+        track,
+        audioRef,
+        isActive,
+        nextTrack,
+        prevTrack,
+        toggleAudio,
+        onAudioEnd,
+        elapsed,
+        duration,
+    } = useAudioKit();
 
     return (
-        <Box className="container">
-
+        <Box className="wrapper">
             <audio
-                ref={RefAudio}
-                src={musicDetail.songSrc}
-                onEnded={handleEnded}
+                ref={audioRef}
+                src={track.source}
+                onEnded={onAudioEnd}
                 preload="auto"
             />
 
-
-            <video autoPlay muted loop className="backgroundVideo">
+            <video autoPlay muted loop className="bgClip">
                 <source src="/Assets/songs/Video.mp4" type="video/mp4"/>
             </video>
 
+            <Box className="overlay"/>
 
-            <Box className="blackScreen"/>
+            <Box className="playerBox">
+                <p className="titleTxt">{track.title}</p>
+                <p className="artistTxt">{track.artist}</p>
 
-
-            <Box className="music-Container">
-
-                <p className="trackName">{musicDetail.songName}</p>
-                <p className="artistName">{musicDetail.songArtist}</p>
-
-
-                <div className={`visualizerWrapper ${isPlaying ? "playing" : "paused"}`}>
-                    <div className="visualizerRing"/>
-                    <div className="visualizerWave"/>
+                <div className={`visualBox ${isActive ? "on" : "off"}`}>
+                    <div className="ringAnim"/>
+                    <div className="waveAnim"/>
                     <img
-                        src={musicDetail.songAvatar}
-                        alt="Song"
-                        className="visualizerAvatar"
-                        id="songAvatar"
+                        src={track.cover}
+                        alt="cover"
+                        className="albumCover"
+                        id="albumImg"
                     />
                 </div>
 
-
-                <Box className="TimerDiv">
-                    <p className="currentTime">{currentTime}</p>
-                    <p className="totalLength">{totalTime}</p>
+                <Box className="timeInfo">
+                    <p className="elapsed">{elapsed}</p>
+                    <p className="duration">{duration}</p>
                 </Box>
-
 
                 <Box width={300}>
                     <Slider
-                        value={progress}
-                        onChange={handleSeek}
+                        value={barProgress}
+                        onChange={onSeekChange}
                         min={0}
                         max={100}
+                        aria-label="seek-bar"
                         sx={{
-                            color: "#002e7e",
+                            color: "#1c2954",
                             height: 6,
                             "& .MuiSlider-thumb": {
                                 width: 14,
                                 height: 14,
-                                backgroundColor: "#fff8f8",
-                                "&:hover": {boxShadow: "0 0 0 6px rgba(41,121,255,0.16)"},
+                                backgroundColor: "#f7f7f7",
+                                "&:hover": {
+                                    boxShadow: "0 0 0 6px rgba(41,121,255,0.16)",
+                                },
                             },
                             "& .MuiSlider-track": {border: "none"},
                             "& .MuiSlider-rail": {
@@ -90,25 +85,24 @@ const App = () => {
                     />
                 </Box>
 
-
-                <Box className="controls">
+                <Box className="controlPanel">
                     <SkipPreviousOutlinedIcon
-                        onClick={handlePrevMusic}
+                        onClick={prevTrack}
                         sx={{marginRight: "1.5rem", cursor: "pointer"}}
                     />
-                    {isPlaying ? (
+                    {isActive ? (
                         <PauseCircleIcon
-                            onClick={togglePlay}
+                            onClick={toggleAudio}
                             sx={{cursor: "pointer"}}
                         />
                     ) : (
                         <PlayCircleIcon
-                            onClick={togglePlay}
+                            onClick={toggleAudio}
                             sx={{cursor: "pointer"}}
                         />
                     )}
                     <SkipNextOutlinedIcon
-                        onClick={handleNextMusic}
+                        onClick={nextTrack}
                         sx={{marginLeft: "1.5rem", cursor: "pointer"}}
                     />
                 </Box>
