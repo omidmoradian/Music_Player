@@ -33,7 +33,6 @@ export type MusicContextType = {
     onAudioEnd: () => void;
 };
 
-// ✅ ساخت Context واقعی
 const MusicContext = createContext<MusicContextType | undefined>(undefined);
 
 export const AudioKitProvider: React.FC<{ children: ReactNode }> = ({
@@ -41,7 +40,7 @@ export const AudioKitProvider: React.FC<{ children: ReactNode }> = ({
                                                                     }) => {
     const library: TrackInfo[] = [
         {
-            title: "Shadow Nights",
+            title: "Be ki begam",
             artist: "Arshyas",
             source: "/Assets/songs/BeKiBegam.mp3",
             cover: "/Assets/Images/Arshyas.jpg",
@@ -53,7 +52,7 @@ export const AudioKitProvider: React.FC<{ children: ReactNode }> = ({
             cover: "/Assets/Images/Leito.jpg",
         },
         {
-            title: "Last Words",
+            title: "Delam Tange",
             artist: "Ashvan",
             source: "/Assets/songs/Ashvan.mp3",
             cover: "/Assets/Images/Ashvan.jpg",
@@ -207,7 +206,7 @@ export const AudioKitProvider: React.FC<{ children: ReactNode }> = ({
     );
 };
 
-// ✅ هوک اختصاصی برای استفاده از context
+
 export const useAudioKit = (): MusicContextType => {
     const ctx = useContext(MusicContext);
     if (!ctx)
