@@ -1,149 +1,93 @@
 import React, {useEffect, useRef} from "react";
-import Box from "@mui/material/Box";
+import {Box, styled} from "@mui/material";
 
 interface AlbumVisualizerProps {
-    audioElementReference: React.RefObject<HTMLAudioElement> | React.MutableRefObject<HTMLAudioElement | null>;
+    audioElementReference: React.RefObject<HTMLAudioElement | null>;
     isAudioPlaying: boolean;
     albumCoverImageUrl: string;
-    visualizerSize?: number;
+    visualizerSize: number;
 }
 
+const VisualizerWrapper = styled(Box)<{ size: number }>(({size}) => ({
+    position: "relative",
+    width: size,
+    height: size,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+}));
+
+const RotatingRing = styled(Box, {
+    shouldForwardProp: (prop) => prop !== "isPlaying",
+})<{ isPlaying: boolean }>(({isPlaying}) => ({
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    borderRadius: "50%",
+    border: "6px solid rgba(255, 215, 0, 0.9)",  // طلایی تر و ضخیم تر
+    boxShadow:
+        "0 0 30px 8px rgba(255, 215, 0, 0.7), inset 0 0 30px 10px rgba(255, 255, 255, 0.15)",
+    animation: isPlaying ? "spin 14s linear infinite" : "none",
+    "@keyframes spin": {
+        from: {transform: "rotate(0deg)"},
+        to: {transform: "rotate(360deg)"},
+    },
+    transition: "border-color 0.3s ease",
+}));
+
+const GlowShadow = styled(Box)({
+    position: "absolute",
+    width: "92%",
+    height: "92%",
+    borderRadius: "50%",
+    background:
+        "radial-gradient(circle, rgba(255,215,0,0.5) 0%, rgba(255,215,0,0) 75%)",
+    filter: "blur(12px)",
+    zIndex: 0,
+});
+
+const AlbumImage = styled("img")({
+    width: "85%",           // کمی بزرگ‌تر
+    height: "85%",
+    borderRadius: "50%",
+    objectFit: "cover",
+    boxShadow: "0 15px 40px rgba(0,0,0,0.6)",  // سایه قوی‌تر و بهتر
+    border: "4px solid rgba(255, 255, 255, 0.25)", // کادر سفید کم‌رنگ
+    zIndex: 2,
+    transition: "transform 0.3s ease",
+});
+
 const AlbumVisualizer: React.FC<AlbumVisualizerProps> = ({
-                                                             audioElementReference,
-                                                             isAudioPlaying,
                                                              albumCoverImageUrl,
-                                                             visualizerSize = 220,
+                                                             visualizerSize = 280,
+                                                             isAudioPlaying,
+                                                             audioElementReference,
                                                          }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const analyserRef = useRef<AnalyserNode | null>(null);
-    const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-    const animationRef = useRef<number | null>(null);
+    const imgRef = useRef<HTMLImageElement | null>(null);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
         const audio = audioElementReference.current;
-        if (!canvas || !audio) return;
+        if (!audio) return;
 
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = visualizerSize * dpr;
-        canvas.height = visualizerSize * dpr;
-        ctx.scale(dpr, dpr);
-
-        if (!audioContextRef.current)
-            audioContextRef.current = new AudioContext();
-
-        const audioContext = audioContextRef.current;
-
-        if (!analyserRef.current) {
-            analyserRef.current = audioContext.createAnalyser();
-            analyserRef.current.fftSize = 256;
-            analyserRef.current.smoothingTimeConstant = 0.8;
-        }
-
-        const analyser = analyserRef.current;
-
-        if (!sourceRef.current) {
-            sourceRef.current = audioContext.createMediaElementSource(audio);
-            sourceRef.current.connect(analyser);
-            analyser.connect(audioContext.destination);
-        }
-
-        const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-
-        const renderFrame = () => {
-            analyser.getByteFrequencyData(frequencyData);
-            const width = visualizerSize;
-            const height = visualizerSize;
-            const cx = width / 2;
-            const cy = height / 2;
-            const baseRadius = visualizerSize / 3;
-
-            ctx.clearRect(0, 0, width, height);
-
-            const totalBars = 120;
-            for (let i = 0; i < totalBars; i++) {
-                const angle = (i / totalBars) * Math.PI * 2;
-                const idx = Math.floor((i / totalBars) * frequencyData.length);
-                const amplitude =
-                    Math.max(frequencyData[idx] / 5, 2) +
-                    Math.random() * 1.5;
-
-                const x1 = cx + Math.cos(angle) * baseRadius;
-                const y1 = cy + Math.sin(angle) * baseRadius;
-                const x2 = cx + Math.cos(angle) * (baseRadius + amplitude);
-                const y2 = cy + Math.sin(angle) * (baseRadius + amplitude);
-
-                const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-                gradient.addColorStop(0, `hsl(${i * 5}, 100%, 65%)`);
-                gradient.addColorStop(1, `hsl(${i * 5 + 40}, 100%, 75%)`);
-
-                ctx.strokeStyle = gradient;
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.stroke();
+        const handleTimeUpdate = () => {
+            if (imgRef.current) {
+                const scale = isAudioPlaying
+                    ? 1 + Math.sin(audio.currentTime * 5) * 0.02
+                    : 1;
+                imgRef.current.style.transform = `scale(${scale})`;
             }
-
-            animationRef.current = requestAnimationFrame(renderFrame);
         };
 
-        if (isAudioPlaying) {
-            audioContext.resume();
-            renderFrame();
-        } else if (animationRef.current) {
-            cancelAnimationFrame(animationRef.current);
-            ctx.clearRect(0, 0, visualizerSize, visualizerSize);
-        }
-
-        return () => {
-            if (animationRef.current) cancelAnimationFrame(animationRef.current);
-        };
-    }, [audioElementReference, isAudioPlaying, visualizerSize]);
+        audio.addEventListener("timeupdate", handleTimeUpdate);
+        return () => audio.removeEventListener("timeupdate", handleTimeUpdate);
+    }, [audioElementReference, isAudioPlaying]);
 
     return (
-        <Box
-            sx={{
-                position: "relative",
-                width: visualizerSize,
-                height: visualizerSize,
-                margin: "auto",
-            }}
-        >
-            <canvas
-                ref={canvasRef}
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    margin: "auto",
-                    background: "transparent",
-                    pointerEvents: "none",
-                }}
-            />
-            <Box
-                component="img"
-                src={albumCoverImageUrl}
-                alt="Album cover"
-                sx={{
-                    width: "75%",
-                    height: "75%",
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: "12.5%",
-                    left: "12.5%",
-                    objectFit: "cover",
-                    transition: "transform 0.4s ease-in-out",
-                    transform: isAudioPlaying ? "scale(1.05)" : "scale(1)",
-                    boxShadow: isAudioPlaying
-                        ? "0 0 25px rgba(0,255,255,0.5)"
-                        : "0 0 10px rgba(0,0,0,0.2)",
-                }}
-            />
-        </Box>
+        <VisualizerWrapper size={visualizerSize}>
+            <GlowShadow/>
+            <RotatingRing isPlaying={isAudioPlaying}/>
+            <AlbumImage ref={imgRef} src={albumCoverImageUrl} alt="Album Cover"/>
+        </VisualizerWrapper>
     );
 };
 

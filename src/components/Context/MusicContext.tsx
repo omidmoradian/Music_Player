@@ -1,215 +1,230 @@
-import React, {
-    createContext,
-    useContext,
-    useRef,
-    useState,
-    useEffect,
-    ReactNode,
-} from "react";
+import React, {createContext, useContext, useRef, useState, useEffect} from "react";
 
-export type TrackInfo = {
+export interface SongType {
+    id: number;
     title: string;
     artist: string;
-    source: string;
     cover: string;
-};
+    source: string;
+}
 
-export type MusicContextType = {
-    library: TrackInfo[];
-    track: TrackInfo;
-    index: number;
-    isActive: boolean;
-    audioRef: React.MutableRefObject<HTMLAudioElement | null>;
-    barProgress: number;
-    elapsed: string;
-    duration: string;
+export interface Playlist {
+    id: string;
+    name: string;
+    songs: SongType[];
+}
+
+export interface MusicContextType {
+    isAudioPlaying: boolean;
     toggleAudio: () => void;
+    library: SongType[];
+    index: number;
+    setIndex: (i: number) => void;
+    favorites: number[];
+    toggleFavorite: (id: number) => void;
+    audioRef: React.RefObject<HTMLAudioElement | null>;
+    duration: number;
+    currentTime: number;
+    setCurrentTime: (value: number) => void;
+    volume: number;
+    setVolume: (value: number) => void;
+    openPanel: boolean;
+    setOpenPanel: (value: boolean) => void;
+    playlists: Playlist[];
+    addToPlaylist: (playlistId: string, song: SongType) => void;
+    createPlaylist: (name: string) => void;
     nextTrack: () => void;
     prevTrack: () => void;
-    onSeekChange: (
-        event: Event | React.SyntheticEvent,
-        value: number | number[]
-    ) => void;
-    onAudioEnd: () => void;
-};
+    handleSeek: (value: number) => void;
+    handleVolume: (value: number) => void;
+}
 
-const MusicContext = createContext<MusicContextType | undefined>(undefined);
+const MusicContext = createContext<MusicContextType>({} as MusicContextType);
 
-export const AudioKitProvider: React.FC<{ children: ReactNode }> = ({
-                                                                        children,
-                                                                    }) => {
-    const library: TrackInfo[] = [
+export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({children}) => {
+    const [library] = useState<SongType[]>([
         {
-            title: "Be ki begam",
+            id: 1,
+            title: "Shadow Nights",
             artist: "Arshyas",
             source: "/Assets/songs/BeKiBegam.mp3",
-            cover: "/Assets/Images/Arshyas.jpg",
+            cover: "/Assets/Images/Arshyas.jpg"
         },
         {
+            id: 2,
             title: "Another Dream",
             artist: "Leito",
             source: "/Assets/songs/Leito.mp3",
-            cover: "/Assets/Images/Leito.jpg",
+            cover: "/Assets/Images/Leito.jpg"
         },
         {
-            title: "Delam Tange",
+            id: 3,
+            title: "Last Words",
             artist: "Ashvan",
             source: "/Assets/songs/Ashvan.mp3",
-            cover: "/Assets/Images/Ashvan.jpg",
+            cover: "/Assets/Images/Ashvan.jpg"
         },
         {
+            id: 4,
             title: "Be Joz To",
             artist: "Shayan YO",
             source: "/Assets/songs/BejozTo.mp3",
-            cover: "/Assets/Images/ShayanYo.jpg",
+            cover: "/Assets/Images/ShayanYo.jpg"
         },
         {
+            id: 5,
             title: "To Ke Midooni",
             artist: "Nivad",
             source: "/Assets/songs/Nivad.mp3",
-            cover: "/Assets/Images/Nivad.jpg",
+            cover: "/Assets/Images/Nivad.jpg"
         },
         {
+            id: 6,
             title: "Saltanat",
             artist: "Moharami",
             source: "/Assets/songs/Moharami.mp3",
-            cover: "/Assets/Images/Moharamy.jpg",
+            cover: "/Assets/Images/Moharamy.jpg"
         },
         {
+            id: 7,
             title: "Hichvaght Naboodi",
             artist: "ArianFar",
             source: "/Assets/songs/Arianfar.mp3",
-            cover: "/Assets/Images/ArianFar.jpg",
+            cover: "/Assets/Images/ArianFar.jpg"
         },
         {
+            id: 8,
             title: "Bi To Har Shab",
             artist: "Novan",
             source: "/Assets/songs/Novan.mp3",
-            cover: "/Assets/Images/Novan.jpg",
+            cover: "/Assets/Images/Novan.jpg"
         },
-    ];
+    ]);
 
     const [index, setIndex] = useState(0);
-    const [isActive, setIsActive] = useState(false);
-    const [barProgress, setBarProgress] = useState(0);
-    const [elapsed, setElapsed] = useState("00:00");
-    const [duration, setDuration] = useState("00:00");
+    const [favorites, setFavorites] = useState<number[]>([]);
+    const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [volume, setVolume] = useState(50);
+    const [openPanel, setOpenPanel] = useState(false);
+    const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const track = library[index];
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     const toggleAudio = () => {
-        const el = audioRef.current;
-        if (!el) return;
+        const audio = audioRef.current;
+        if (!audio) return;
 
-        if (el.paused) {
-            el.play().then(() => setIsActive(true)).catch(() => {
-            });
+        if (!isAudioPlaying) {
+            audio.play().then(() => setIsAudioPlaying(true)).catch(() => setIsAudioPlaying(false));
         } else {
-            el.pause();
-            setIsActive(false);
+            audio.pause();
+            setIsAudioPlaying(false);
         }
     };
 
-    const nextTrack = () => {
-        setIndex((i) => (i >= library.length - 1 ? 0 : i + 1));
+    const toggleFavorite = (id: number) => {
+        setFavorites(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
     };
 
-    const prevTrack = () => {
-        setIndex((i) => (i <= 0 ? library.length - 1 : i - 1));
+    const nextTrack = () => setIndex(prev => (prev + 1) % library.length);
+    const prevTrack = () => setIndex(prev => (prev - 1 + library.length) % library.length);
+
+    const handleSeek = (value: number) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        audio.currentTime = value;
+        setCurrentTime(value);
     };
 
-    const onAudioEnd = () => {
-        nextTrack();
-        setTimeout(() => {
-            const el = audioRef.current;
-            if (el) {
-                el.play().then(() => setIsActive(true)).catch(() => {
-                });
-            }
-        }, 120);
+    const handleVolume = (value: number) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+        audio.volume = value / 100;
+        setVolume(value);
     };
 
-    const onSeekChange = (
-        _: Event | React.SyntheticEvent,
-        value: number | number[]
-    ) => {
-        const val = Array.isArray(value) ? value[0] : value;
-        const el = audioRef.current;
-        if (el && !isNaN(el.duration)) {
-            el.currentTime = (val / 100) * el.duration;
-            setBarProgress(val);
-        }
-    };
-
-    const formatTime = (seconds: number): string => {
-        if (isNaN(seconds)) return "00:00";
-        const m = Math.floor(seconds / 60);
-        const s = Math.floor(seconds % 60);
-        return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-    };
-
+    // وقتی ترک تغییر میکنه
     useEffect(() => {
-        const el = audioRef.current;
-        if (!el) return;
+        const audio = audioRef.current;
+        if (!audio) return;
 
-        const update = () => {
-            const cur = el.currentTime || 0;
-            const dur = el.duration || 0;
-            setBarProgress(dur ? (cur / dur) * 100 : 0);
-            setElapsed(formatTime(cur));
-            setDuration(formatTime(dur));
-        };
+        audio.src = library[index].source;
+        audio.load();
+        setCurrentTime(0);
 
-        el.addEventListener("timeupdate", update);
-        el.addEventListener("loadedmetadata", update);
+        if (isAudioPlaying) {
+            audio.play().catch(() => setIsAudioPlaying(false));
+        }
+    }, [index, library]);
+
+    // مدیریت آپدیت زمان و پایان ترک
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const handleLoaded = () => setDuration(audio.duration);
+        const handleTime = () => setCurrentTime(audio.currentTime);
+        const handleEnded = () => nextTrack();
+
+        audio.addEventListener("loadedmetadata", handleLoaded);
+        audio.addEventListener("timeupdate", handleTime);
+        audio.addEventListener("ended", handleEnded);
 
         return () => {
-            el.removeEventListener("timeupdate", update);
-            el.removeEventListener("loadedmetadata", update);
+            audio.removeEventListener("loadedmetadata", handleLoaded);
+            audio.removeEventListener("timeupdate", handleTime);
+            audio.removeEventListener("ended", handleEnded);
         };
-    }, []);
+    }, [audioRef]);
 
-    useEffect(() => {
-        const el = audioRef.current;
-        if (!el) return;
+    const createPlaylist = (name: string) => {
+        const newPlaylist: Playlist = {id: Date.now().toString(), name, songs: []};
+        setPlaylists(prev => [...prev, newPlaylist]);
+    };
 
-        el.load();
-        if (isActive) {
-            el.play().catch(() => {
-            });
-        }
-    }, [index, isActive]);
-
-    const value: MusicContextType = {
-        library,
-        track,
-        index,
-        isActive,
-        audioRef,
-        barProgress,
-        elapsed,
-        duration,
-        toggleAudio,
-        nextTrack,
-        prevTrack,
-        onSeekChange,
-        onAudioEnd,
+    const addToPlaylist = (playlistId: string, song: SongType) => {
+        setPlaylists(prev =>
+            prev.map(p =>
+                p.id === playlistId && !p.songs.find(s => s.id === song.id)
+                    ? {...p, songs: [...p.songs, song]}
+                    : p
+            )
+        );
     };
 
     return (
-        <MusicContext.Provider value={value}>
+        <MusicContext.Provider
+            value={{
+                isAudioPlaying,
+                toggleAudio,
+                library,
+                index,
+                setIndex,
+                favorites,
+                toggleFavorite,
+                audioRef,
+                duration,
+                currentTime,
+                setCurrentTime,
+                volume,
+                setVolume,
+                openPanel,
+                setOpenPanel,
+                playlists,
+                addToPlaylist,
+                createPlaylist,
+                nextTrack,
+                prevTrack,
+                handleSeek,
+                handleVolume,
+            }}
+        >
             {children}
-            {/* اضافه کردن تگ audio برای کارکرد کامل */}
-            <audio ref={audioRef} src={track.source} onEnded={onAudioEnd}/>
+            <audio ref={audioRef}/>
         </MusicContext.Provider>
     );
 };
 
-
-export const useAudioKit = (): MusicContextType => {
-    const ctx = useContext(MusicContext);
-    if (!ctx)
-        throw new Error("useAudioKit must be used within an <AudioKitProvider>");
-    return ctx;
-};
+export const useAudioKit = () => useContext(MusicContext);
